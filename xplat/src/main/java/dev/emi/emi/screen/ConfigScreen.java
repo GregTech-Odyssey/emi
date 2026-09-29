@@ -29,6 +29,7 @@ import dev.emi.emi.config.SidebarSubpanels;
 import dev.emi.emi.input.EmiBind;
 import dev.emi.emi.input.EmiBind.ModifiedKey;
 import dev.emi.emi.input.EmiInput;
+import dev.emi.emi.planner.PlannerText;
 import dev.emi.emi.runtime.EmiDrawContext;
 import dev.emi.emi.runtime.EmiLog;
 import dev.emi.emi.screen.widget.SizedButtonWidget;
@@ -47,6 +48,7 @@ import dev.emi.emi.screen.widget.config.ScreenAlignWidget;
 import dev.emi.emi.screen.widget.config.SidebarPagesWidget;
 import dev.emi.emi.screen.widget.config.SidebarSubpanelsWidget;
 import dev.emi.emi.screen.widget.config.SubGroupNameWidget;
+import dev.emi.emi.screen.widget.config.StringWidget;
 import dev.emi.emi.search.EmiSearch;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -83,6 +85,31 @@ public class ConfigScreen extends Screen {
 		activeBindOffset = offset;
 		activeModifiers = 0;
 		lastModifier = 0;
+	}
+
+	private static Text getGroupText(String key) {
+		if (key.equals("ui.sidebar-grouping")) {
+			return EmiPort.literal(PlannerText.tr("sidebar.config.group", "Sidebar Grouping"));
+		}
+		return EmiPort.translatable("config.emi.group." + key.replace('-', '_'));
+	}
+
+	private static Text getConfigText(String key) {
+		String value = switch (key) {
+			case "ui.sidebar-grouping-enabled" -> PlannerText.tr("sidebar.config.enabled", "Enable Sidebar Grouping");
+			case "ui.sidebar-grouping-gt-tag-prefix" -> PlannerText.tr("sidebar.config.gt_prefix", "Group GT TagPrefix Items");
+			case "ui.sidebar-grouping-tier-rules" -> PlannerText.tr("sidebar.config.tier_rules", "Group Tier Variants");
+			case "ui.sidebar-grouping-color-rules" -> PlannerText.tr("sidebar.config.color_rules", "Group Color Variants");
+			case "ui.sidebar-grouping-wood-rules" -> PlannerText.tr("sidebar.config.wood_rules", "Group Wood Variants");
+			case "ui.sidebar-grouping-same-item-id" -> PlannerText.tr("sidebar.config.same_id", "Group Same Item ID");
+			case "ui.sidebar-grouping-tier-prefixes" -> PlannerText.tr("sidebar.config.tier_prefixes", "Tier Prefixes");
+			case "ui.sidebar-grouping-color-prefixes" -> PlannerText.tr("sidebar.config.color_prefixes", "Color Prefixes");
+			case "ui.sidebar-grouping-wood-prefixes" -> PlannerText.tr("sidebar.config.wood_prefixes", "Wood Prefixes");
+			case "ui.sidebar-grouping-custom-rules" -> PlannerText.tr("sidebar.config.custom_rules", "Custom ID Rules");
+			case "ui.sidebar-grouping-blacklist" -> PlannerText.tr("sidebar.config.blacklist", "Grouping Blacklist");
+			default -> null;
+		};
+		return value == null ? EmiPort.translatable("config.emi." + key.replace('-', '_')) : EmiPort.literal(value);
 	}
 
 	@Override
@@ -188,7 +215,7 @@ public class ConfigScreen extends Screen {
 					ConfigGroup configGroup = field.getAnnotation(ConfigGroup.class);
 					if (configGroup != null) {
 						currentGroup = configGroup;
-						Text text = EmiPort.translatable("config.emi.group." + configGroup.value().replace('-', '_'));
+						Text text = getGroupText(configGroup.value());
 						currentSubGroupWidget = new SubGroupNameWidget(configGroup.value(), text);
 						if (collapsed.contains(text.getString())) {
 							currentSubGroupWidget.collapsed = true;
@@ -197,7 +224,7 @@ public class ConfigScreen extends Screen {
 						list.addEntry(currentSubGroupWidget);
 					}
 					Predicate<?> predicate = EmiConfig.FILTERS.getOrDefault(annot.value(), v -> true);
-					Text translation = EmiPort.translatable("config.emi." + annot.value().replace('-', '_'));
+					Text translation = getConfigText(annot.value());
 					ConfigEntryWidget entry = null;
 					if (field.getType() == boolean.class) {
 						entry = new BooleanWidget(translation, getFieldTooltip(field), searchSupplier, new Mutator<Boolean>() {
@@ -230,6 +257,22 @@ public class ConfigScreen extends Screen {
 									field.setInt(null, value);
 								} catch (Exception e) {}
 							}						
+						});
+					} else if (field.getType() == String.class) {
+						entry = new StringWidget(translation, getFieldTooltip(field), searchSupplier, new Mutator<String>() {
+
+							public String getValue() {
+								try {
+									return (String) field.get(null);
+								} catch (Exception e) {}
+								return "";
+							}
+
+							public void setValue(String value) {
+								try {
+									field.set(null, value);
+								} catch (Exception e) {}
+							}
 						});
 					} else if (field.getType() == EmiBind.class) {
 						entry = new EmiBindWidget(this, getFieldTooltip(field), searchSupplier, (EmiBind) field.get(null));

@@ -1509,5 +1509,7 @@
   "emi.production_planner.migration.line_impact.net": "Чистый выход: %s",
   "emi.production_planner.migration.line_impact.flows_same": "Потоки материалов не изменились при текущих запланированных скоростях",
   "emi.production_planner.migration.line_impact.missing": "%s текущих строк рецептов отсутствуют и исключены из новых итогов",
-  "emi.production_planner.bookmark.help.reorder_item": "ЛКМ + перетаскивание по закладке - Изменить порядок"
+  "emi.production_planner.bookmark.help.reorder_item": "ЛКМ + перетаскивание по закладке - Изменить порядок",
+  "emi.sidebar.group.expand": "ALT + ЛКМ: развернуть группу (%s предметов)",
+  "emi.sidebar.group.collapse": "ALT + ЛКМ: свернуть группу (%s предметов)"
 }

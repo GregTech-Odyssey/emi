@@ -32,6 +32,7 @@ public class EmiPersistentData {
 			json.addProperty("favorite_page_count", EmiFavorites.getFavoritePageCount());
 			json.add("favorite_groups", EmiFavoriteGroups.save());
 			json.add("bookmark_trees", EmiBookmarkTreePersistence.save());
+			json.add("sidebar_grouping", EmiCollapsibleSidebarGroups.save());
 			EmiSidebars.save(json);
 			json.add("recipe_defaults", BoM.saveAdded());
 			json.add("hidden_stacks", EmiHidden.save());
@@ -63,6 +64,11 @@ public class EmiPersistentData {
 				EmiFavoriteGroups.load(embeddedGroups == null ? new JsonArray() : embeddedGroups);
 			}
 			trimFavoritePages = EmiFavorites.trimTrailingEmptyFavoritePages();
+			if (JsonHelper.hasJsonObject(json, "sidebar_grouping")) {
+				EmiCollapsibleSidebarGroups.load(JsonHelper.getObject(json, "sidebar_grouping"));
+			} else {
+				EmiCollapsibleSidebarGroups.load(new JsonObject());
+			}
 			EmiSidebars.load(json);
 			if (JsonHelper.hasJsonObject(json, "recipe_defaults")) {
 				BoM.loadAdded(JsonHelper.getObject(json, "recipe_defaults"));

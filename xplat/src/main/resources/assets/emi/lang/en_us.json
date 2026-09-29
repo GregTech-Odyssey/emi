@@ -1509,5 +1509,7 @@
   "emi.production_planner.migration.line_impact.net": "Net output: %s",
   "emi.production_planner.migration.line_impact.flows_same": "Material flows are unchanged at the current planned craft rates",
   "emi.production_planner.migration.line_impact.missing": "%s current recipe row(s) are missing and are excluded from the new-side totals",
-  "emi.production_planner.bookmark.help.reorder_item": "LMB + Drag on Bookmark - Reorder Bookmark"
+  "emi.production_planner.bookmark.help.reorder_item": "LMB + Drag on Bookmark - Reorder Bookmark",
+  "emi.sidebar.group.expand": "Alt + LMB: Expand group (%s items)",
+  "emi.sidebar.group.collapse": "Alt + LMB: Collapse group (%s items)"
 }

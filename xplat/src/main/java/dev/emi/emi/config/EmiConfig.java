@@ -274,6 +274,41 @@ public class EmiConfig {
 	@ConfigValue("ui.right-sidebar-theme")
 	public static SidebarTheme rightSidebarTheme = SidebarTheme.TRANSPARENT;
 
+	@ConfigGroup("ui.sidebar-grouping")
+	@ConfigValue("ui.sidebar-grouping-enabled")
+	public static boolean sidebarGroupingEnabled = true;
+
+	@ConfigValue("ui.sidebar-grouping-gt-tag-prefix")
+	public static boolean sidebarGroupingGtTagPrefix = true;
+
+	@ConfigValue("ui.sidebar-grouping-tier-rules")
+	public static boolean sidebarGroupingTierRules = true;
+
+	@ConfigValue("ui.sidebar-grouping-color-rules")
+	public static boolean sidebarGroupingColorRules = true;
+
+	@ConfigValue("ui.sidebar-grouping-wood-rules")
+	public static boolean sidebarGroupingWoodRules = true;
+
+	@ConfigValue("ui.sidebar-grouping-same-item-id")
+	public static boolean sidebarGroupingSameItemId = true;
+
+	@ConfigValue("ui.sidebar-grouping-tier-prefixes")
+	public static String sidebarGroupingTierPrefixes = "ulv,lv,mv,hv,ev,iv,luv,zpm,uv,uhv,uev,uiv,uxv,opv,max";
+
+	@ConfigValue("ui.sidebar-grouping-color-prefixes")
+	public static String sidebarGroupingColorPrefixes = "light_blue,light_gray,white,orange,magenta,yellow,lime,pink,gray,cyan,purple,blue,brown,green,red,black";
+
+	@ConfigValue("ui.sidebar-grouping-wood-prefixes")
+	public static String sidebarGroupingWoodPrefixes = "dark_oak,oak,spruce,birch,jungle,acacia,mangrove,cherry,bamboo,crimson,warped";
+
+	@ConfigValue("ui.sidebar-grouping-custom-rules")
+	public static String sidebarGroupingCustomRules = "";
+
+	@ConfigGroupEnd
+	@ConfigValue("ui.sidebar-grouping-blacklist")
+	public static String sidebarGroupingBlacklist = "";
+
 	// Top sidebar
 
 	@ConfigGroup("ui.top-sidebar")

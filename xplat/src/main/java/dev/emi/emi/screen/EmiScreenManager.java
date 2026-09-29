@@ -47,12 +47,14 @@ import dev.emi.emi.input.EmiInput;
 import dev.emi.emi.mixin.accessor.HandledScreenAccessor;
 import dev.emi.emi.network.CreateItemC2SPacket;
 import dev.emi.emi.network.EmiNetwork;
+import dev.emi.emi.planner.PlannerText;
 import dev.emi.emi.platform.EmiClient;
 import dev.emi.emi.registry.EmiDragDropHandlers;
 import dev.emi.emi.registry.EmiExclusionAreas;
 import dev.emi.emi.registry.EmiRecipeFiller;
 import dev.emi.emi.registry.EmiRecipes;
 import dev.emi.emi.registry.EmiStackProviders;
+import dev.emi.emi.runtime.EmiCollapsibleSidebarGroups;
 import dev.emi.emi.runtime.EmiDrawContext;
 import dev.emi.emi.runtime.EmiFavorite;
 import dev.emi.emi.runtime.EmiFavoriteGroups;
@@ -771,6 +773,17 @@ public class EmiScreenManager {
 					}
 					List<TooltipComponent> list = Lists.newArrayList();
 					list.addAll(hov.getTooltip());
+					if (space != null && sidebar == SidebarType.INDEX && !EmiConfig.editMode) {
+						EmiCollapsibleSidebarGroups.Group group =
+								EmiCollapsibleSidebarGroups.group(space.getRawStacks(), hov);
+						if (group != null) {
+							String label = EmiCollapsibleSidebarGroups.isExpanded(group)
+									? PlannerText.tr("sidebar.group.collapse", "ALT + LMB: Collapse group (%d items)", group.size())
+									: PlannerText.tr("sidebar.group.expand", "ALT + LMB: Expand group (%d items)", group.size());
+							list.add(TooltipComponent.of(EmiPort.literal(label)
+									.formatted(Formatting.LIGHT_PURPLE).asOrderedText()));
+						}
+					}
 					if (EmiApi.getRecipeContext(hov) == null && EmiConfig.showCraft.isHeld()) {
 						EmiRecipe recipe = EmiUtil.getPreferredRecipe(hov, lastPlayerInventory, false);
 						if (recipe != null) {
@@ -1011,6 +1024,16 @@ public class EmiScreenManager {
 			return false;
 		}
 		recalculate();
+		if (button == 0 && EmiInput.isAltDown() && !EmiConfig.editMode) {
+			ScreenSpace space = getHoveredSpace((int) mouseX, (int) mouseY);
+			if (space != null && space.getType() == SidebarType.INDEX) {
+				EmiIngredient hovered = getHoveredStack((int) mouseX, (int) mouseY, false).getStack();
+				if (EmiCollapsibleSidebarGroups.toggle(space.getRawStacks(), hovered)) {
+					repopulatePanels(SidebarType.INDEX);
+					return true;
+				}
+			}
+		}
 		EmiIngredient ingredient = getHoveredStack((int) mouseX, (int) mouseY, !isClickClicky(button)).getStack();
 		pressedStack = ingredient;
 		if (!ingredient.isEmpty()) {
@@ -1792,12 +1815,20 @@ public class EmiScreenManager {
 			this.widths = widths;
 		}
 
-		public List<? extends EmiIngredient> getStacks() {
+		public List<? extends EmiIngredient> getRawStacks() {
 			if (search && getType() != SidebarType.CHESS) {
 				return searchedStacks;
 			} else {
 				return EmiSidebars.getStacks(getType());
 			}
+		}
+
+		public List<? extends EmiIngredient> getStacks() {
+			List<? extends EmiIngredient> stacks = getRawStacks();
+			if (getType() == SidebarType.INDEX && !EmiConfig.editMode) {
+				return EmiCollapsibleSidebarGroups.visible(stacks);
+			}
+			return stacks;
 		}
 
 		public List<? extends EmiIngredient> getPage(int page) {
@@ -1820,6 +1851,7 @@ public class EmiScreenManager {
 				EmiPort.setPositionTexShader();
 				context.setColor(1.0F, 1.0F, 1.0F, 1.0F);
 				int hx = -1, hy = -1;
+				List<int[]> collapsedMarkers = Lists.newArrayList();
 				batcher.begin(0, 0, 0);
 				int i = startIndex;
 				List<? extends EmiIngredient> stacks = getStacks();
@@ -1839,6 +1871,26 @@ public class EmiScreenManager {
 						int cx = this.getX(xo, yo);
 						int cy = this.getY(xo, yo);
 						EmiIngredient stack = stacks.get(i++);
+						if (getType() == SidebarType.INDEX && !EmiConfig.editMode) {
+							EmiCollapsibleSidebarGroups.Group group =
+									EmiCollapsibleSidebarGroups.group(getRawStacks(), stack);
+							if (group != null) {
+								if (EmiCollapsibleSidebarGroups.isExpanded(group)) {
+									int color = 0x665E578C;
+									context.fill(cx, cy, ENTRY_SIZE, 1, color);
+									context.fill(cx, cy + ENTRY_SIZE - 1, ENTRY_SIZE, 1, color);
+									context.fill(cx, cy, 1, ENTRY_SIZE, color);
+									context.fill(cx + ENTRY_SIZE - 1, cy, 1, ENTRY_SIZE, color);
+								} else {
+									context.fill(cx, cy, ENTRY_SIZE, ENTRY_SIZE, 0x182A233F);
+									context.fill(cx, cy, ENTRY_SIZE, 1, 0x996E65A8);
+									context.fill(cx, cy + ENTRY_SIZE - 1, ENTRY_SIZE, 1, 0x996E65A8);
+									context.fill(cx, cy, 1, ENTRY_SIZE, 0x996E65A8);
+									context.fill(cx + ENTRY_SIZE - 1, cy, 1, ENTRY_SIZE, 0x996E65A8);
+									collapsedMarkers.add(new int[] { cx, cy });
+								}
+							}
+						}
 						int renderFlags = -1 ^ EmiIngredient.RENDER_AMOUNT;
 						if (getType() == SidebarType.FAVORITES && stack instanceof EmiFavorite favorite
 								&& EmiFavoriteGroups.groupFor(favorite) != null) {
@@ -1857,6 +1909,18 @@ public class EmiScreenManager {
 					}
 				}
 				batcher.draw();
+				for (int[] marker : collapsedMarkers) {
+					int gx = marker[0];
+					int gy = marker[1];
+					context.fill(gx, gy, ENTRY_SIZE, 1, 0xAA6E65A8);
+					context.fill(gx, gy + ENTRY_SIZE - 1, ENTRY_SIZE, 1, 0xAA6E65A8);
+					context.fill(gx, gy, 1, ENTRY_SIZE, 0xAA6E65A8);
+					context.fill(gx + ENTRY_SIZE - 1, gy, 1, ENTRY_SIZE, 0xAA6E65A8);
+					int mx = gx + ENTRY_SIZE - 5;
+					int my = gy + 1;
+					context.fill(mx, my, 4, 4, 0x885A527F);
+					context.fill(mx + 1, my + 1, 2, 1, 0xCCB9B4D2);
+				}
 				context.pop();
 			}
 		}
