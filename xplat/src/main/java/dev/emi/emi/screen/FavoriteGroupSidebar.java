@@ -60,6 +60,9 @@ public final class FavoriteGroupSidebar {
 	private static EmiFavorite dragFavorite;
 	private static int pressedButton = -1;
 	private static boolean dragging;
+	private static boolean reorderDragging;
+	private static boolean externalFavoriteDragging;
+	private static boolean includeGroupDragging;
 	private static EmiFavoriteGroups.Group pressedPageGroup;
 	private static boolean pageGroupDragging;
 	private static int pageGroupInsertion = -1;
@@ -100,6 +103,7 @@ public final class FavoriteGroupSidebar {
 				renderPageGroupPreview(context, pressedPageGroup, mouseX, mouseY);
 			}
 			renderPageDropTargets(context, layout, mouseX, mouseY);
+			renderPageGroupDropTargets(context, layout, pressedPageGroup, mouseX, mouseY, delta);
 		}
 		context.pop();
 	}
@@ -136,12 +140,13 @@ public final class FavoriteGroupSidebar {
 			tooltip.add(line(PlannerText.tr("bookmark.help.remove_group", "SHIFT + A - Remove Group"), Formatting.YELLOW));
 			tooltip.add(line(PlannerText.tr("bookmark.help.craft_items", "SHIFT + C - Craft Items"), Formatting.YELLOW));
 			tooltip.add(line(PlannerText.tr("bookmark.help.open_exact_recipe", "LMB on Recipe - Open Exact Recipe"), Formatting.YELLOW));
-			tooltip.add(line(PlannerText.tr("bookmark.help.create_include_group", "LMB + Drag - Create/Include Group"), Formatting.YELLOW));
+			tooltip.add(line(PlannerText.tr("bookmark.help.create_include_group", "ALT + LMB + Drag - Create/Include Group"), Formatting.YELLOW));
 			tooltip.add(line(PlannerText.tr("bookmark.help.remove_exclude_group", "RMB + Drag - Remove/Exclude Group"), Formatting.YELLOW));
 			tooltip.add(line(PlannerText.tr("bookmark.help.change_recipe_quantity", "SHIFT/CTRL + Scroll - Change Recipe Quantity"), Formatting.YELLOW));
 			tooltip.add(line(PlannerText.tr("bookmark.help.change_whole_group", "CTRL + SHIFT + Scroll - Change Whole Group"), Formatting.YELLOW));
 			tooltip.add(line(PlannerText.tr("bookmark.help.output_stack_step", "+ ALT - Use Output Stack Size Step"), Formatting.YELLOW));
 			tooltip.add(line(PlannerText.tr("bookmark.help.move_position", "SHIFT + LMB + Drag - Move Position"), Formatting.YELLOW));
+			tooltip.add(line(PlannerText.tr("bookmark.help.reorder_item", "LMB + Drag on Bookmark - Reorder Bookmark"), Formatting.YELLOW));
 			tooltip.add(line(PlannerText.tr("bookmark.help.move_page", "SHIFT + Drag Handle to < > - Move Page"), Formatting.YELLOW));
 			tooltip.add(line(PlannerText.tr("bookmark.help.fill_ghost_slots", "SHIFT + Drag Handle to Ghost Slots - Fill Group"), Formatting.YELLOW));
 			tooltip.add(line(PlannerText.tr("bookmark.help.craft_missing", "CTRL + SHIFT + C - Craft Missing Items"), Formatting.YELLOW));
@@ -210,6 +215,32 @@ public final class FavoriteGroupSidebar {
 		int start = rawIndex(pressedFavorite);
 		int end = rawIndex(dragFavorite);
 		if (start < 0 || end < 0) {
+			return;
+		}
+		if (reorderDragging) {
+			VisibleSlot target = null;
+			for (VisibleSlot slot : layout.slots) {
+				if (slot.favorite == pressedFavorite) {
+					context.fill(slot.bounds.x(), slot.bounds.y(), slot.bounds.width(), slot.bounds.height(), 0x66101010);
+				}
+				if (slot.favorite == dragFavorite) {
+					target = slot;
+				}
+			}
+			if (target != null && dragFavorite != pressedFavorite && layout.space != null) {
+				int local = target.visibleIndex - layout.pageStart;
+				int insertion = end > start ? local + 1 : local;
+				int markerX = layout.space.getEdgeX(insertion);
+				int markerY = layout.space.getEdgeY(insertion);
+				context.fill(markerX - 1, markerY, 2, EmiScreenManager.ENTRY_SIZE, 0xFF55FFFF);
+			}
+			EmiIngredient ingredient = concreteDragIngredient(pressedFavorite);
+			if (!ingredient.isEmpty()) {
+				context.push();
+				context.matrices().translate(0, 0, 260);
+				context.drawStack(ingredient, mouseX - 8, mouseY - 8, EmiIngredient.RENDER_ICON);
+				context.pop();
+			}
 			return;
 		}
 		int min = Math.min(start, end);
@@ -284,6 +315,24 @@ public final class FavoriteGroupSidebar {
 			context.drawStack(ingredient, x + 1, y + 1, EmiIngredient.RENDER_ICON);
 		}
 		context.pop();
+	}
+
+	private static void renderPageGroupDropTargets(EmiDrawContext context, Layout layout, EmiFavoriteGroups.Group group,
+			int mouseX, int mouseY, float delta) {
+		if (group == null || (layout.space != null && layout.space.contains(mouseX, mouseY))) {
+			return;
+		}
+		MinecraftClient client = MinecraftClient.getInstance();
+		if (client.currentScreen == null) {
+			return;
+		}
+		for (EmiFavorite favorite : group.members()) {
+			EmiIngredient ingredient = concreteDragIngredient(favorite);
+			if (!ingredient.isEmpty()) {
+				EmiDragDropHandlers.render(client.currentScreen, ingredient, context.raw(), mouseX, mouseY, delta);
+				return;
+			}
+		}
 	}
 
 	private static void renderPageDropTargets(EmiDrawContext context, Layout layout, int mouseX, int mouseY) {
@@ -388,6 +437,33 @@ public final class FavoriteGroupSidebar {
 		if (pressedFavorite == null || button != pressedButton || (button != 0 && button != 1)) {
 			return false;
 		}
+		if (button == 0 && (reorderDragging || externalFavoriteDragging || (!includeGroupDragging && !EmiInput.isAltDown()
+				&& !EmiInput.isShiftDown() && !EmiInput.isControlDown()))) {
+			if (externalFavoriteDragging) {
+				return false;
+			}
+			Layout current = layout();
+			if (current.space == null || !current.space.contains((int) mouseX, (int) mouseY)) {
+				externalFavoriteDragging = true;
+				reorderDragging = false;
+				dragFavorite = pressedFavorite;
+				dragging = false;
+				return false;
+			}
+			reorderDragging = true;
+			VisibleSlot slot = favoriteAt(current, (int) mouseX, (int) mouseY);
+			if (slot != null
+					&& EmiFavorites.getFavoritePage(slot.favorite) == EmiFavorites.getFavoritePage(pressedFavorite)
+					&& EmiFavoriteGroups.groupFor(slot.favorite) == EmiFavoriteGroups.groupFor(pressedFavorite)) {
+				dragFavorite = slot.favorite;
+			}
+			dragging = true;
+			return true;
+		}
+		if (button == 0 && (includeGroupDragging || (EmiInput.isAltDown()
+				&& !EmiInput.isShiftDown() && !EmiInput.isControlDown()))) {
+			includeGroupDragging = true;
+		}
 		VisibleSlot slot = favoriteAt(layout(), (int) mouseX, (int) mouseY);
 		if (slot != null) {
 			dragFavorite = slot.favorite;
@@ -443,6 +519,25 @@ public final class FavoriteGroupSidebar {
 				return true;
 			} finally {
 				clearPageGroupDrag();
+			}
+		}
+		if (externalFavoriteDragging && pressedFavorite != null && button == 0 && pressedButton == 0) {
+			clearDrag();
+			return false;
+		}
+		if (reorderDragging && pressedFavorite != null && button == 0 && pressedButton == 0) {
+			try {
+				if (dragging && dragFavorite != null && dragFavorite != pressedFavorite) {
+					int start = rawIndex(pressedFavorite);
+					int end = rawIndex(dragFavorite);
+					if (start >= 0 && end >= 0
+							&& EmiFavoriteGroups.moveFavoriteRelative(pressedFavorite, dragFavorite, end > start)) {
+						playSound();
+					}
+				}
+				return true;
+			} finally {
+				clearDrag();
 			}
 		}
 		try {
@@ -2497,6 +2592,9 @@ public final class FavoriteGroupSidebar {
 		dragFavorite = null;
 		pressedButton = -1;
 		dragging = false;
+		reorderDragging = false;
+		externalFavoriteDragging = false;
+		includeGroupDragging = false;
 	}
 
 	private static int updatePageGroupMovePreview(int mouseX, int mouseY) {

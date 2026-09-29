@@ -623,6 +623,36 @@ public final class EmiFavoriteGroups {
 		changed();
 	}
 
+	public static boolean moveFavoriteRelative(EmiFavorite moving, EmiFavorite anchor, boolean after) {
+		if (moving == null || anchor == null || moving == anchor) {
+			return false;
+		}
+		int sourceIndex = identityIndexOf(EmiFavorites.favorites, moving);
+		int anchorIndex = identityIndexOf(EmiFavorites.favorites, anchor);
+		if (sourceIndex < 0 || anchorIndex < 0) {
+			return false;
+		}
+		if (EmiFavorites.getFavoritePage(moving) != EmiFavorites.getFavoritePage(anchor)) {
+			return false;
+		}
+		Group movingGroup = groupFor(moving);
+		Group anchorGroup = groupFor(anchor);
+		if (movingGroup != anchorGroup) {
+			return false;
+		}
+
+		EmiFavorites.favorites.remove(sourceIndex);
+		anchorIndex = identityIndexOf(EmiFavorites.favorites, anchor);
+		if (anchorIndex < 0) {
+			EmiFavorites.favorites.add(Math.min(sourceIndex, EmiFavorites.favorites.size()), moving);
+			return false;
+		}
+		int insertion = anchorIndex + (after ? 1 : 0);
+		EmiFavorites.favorites.add(Math.max(0, Math.min(EmiFavorites.favorites.size(), insertion)), moving);
+		changed();
+		return true;
+	}
+
 	public static void moveGroup(Group group, int rawInsertionIndex) {
 		clearGroupMovePreview();
 		normalizeGroup(group);

@@ -59,7 +59,76 @@ public class EmiDragDropHandlers {
 				return true;
 			}
 		}
-		return false;
+		return dropStacksThroughSingleHandlers(screen, stacks, x, y);
+	}
+
+	private static boolean dropStacksThroughSingleHandlers(Screen screen, List<? extends EmiIngredient> stacks, int x, int y) {
+		if (!(screen instanceof HandledScreen<?> handled)) {
+			return false;
+		}
+		EmiIngredient first = null;
+		int firstIndex = -1;
+		for (int i = 0; i < stacks.size(); i++) {
+			EmiIngredient stack = stacks.get(i);
+			if (stack != null && !stack.isEmpty()) {
+				first = stack;
+				firstIndex = i;
+				break;
+			}
+		}
+		if (first == null || !dropStack(screen, first, x, y)) {
+			return false;
+		}
+
+		HandledScreenAccessor accessor = (HandledScreenAccessor) handled;
+		int left = accessor.getX();
+		int top = accessor.getY();
+		List<Slot> targets = Lists.newArrayList(handled.getScreenHandler().slots);
+		targets.sort((a, b) -> {
+			int yCompare = Integer.compare(a.y, b.y);
+			return yCompare != 0 ? yCompare : Integer.compare(a.x, b.x);
+		});
+
+		Slot hovered = null;
+		for (Slot slot : targets) {
+			int sx = left + slot.x;
+			int sy = top + slot.y;
+			if (x >= sx && x < sx + 16 && y >= sy && y < sy + 16) {
+				hovered = slot;
+				break;
+			}
+		}
+
+		int hoveredIndex = hovered == null ? -1 : targets.indexOf(hovered);
+		boolean[] used = new boolean[targets.size()];
+		if (hoveredIndex >= 0) {
+			used[hoveredIndex] = true;
+		}
+		int scanStart = hoveredIndex < 0 ? 0 : (hoveredIndex + 1) % Math.max(1, targets.size());
+		for (int i = firstIndex + 1; i < stacks.size(); i++) {
+			EmiIngredient stack = stacks.get(i);
+			if (stack == null || stack.isEmpty()) {
+				continue;
+			}
+			boolean placed = false;
+			for (int checked = 0; checked < targets.size(); checked++) {
+				int index = (scanStart + checked) % targets.size();
+				if (used[index]) {
+					continue;
+				}
+				Slot slot = targets.get(index);
+				if (dropStack(screen, stack, left + slot.x + 8, top + slot.y + 8)) {
+					used[index] = true;
+					scanStart = (index + 1) % targets.size();
+					placed = true;
+					break;
+				}
+			}
+			if (!placed) {
+				break;
+			}
+		}
+		return true;
 	}
 
 	private static boolean dropStacksToAe2StorageBus(Screen screen, List<? extends EmiIngredient> stacks, int x, int y) {

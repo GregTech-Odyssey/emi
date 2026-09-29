@@ -1320,7 +1320,7 @@
   "emi.production_planner.bookmark.help.remove_group": "SHIFT + A - Удалить группу",
   "emi.production_planner.bookmark.help.craft_items": "SHIFT + C - Скрафтить предметы",
   "emi.production_planner.bookmark.help.open_exact_recipe": "ЛКМ по рецепту - Открыть точный рецепт",
-  "emi.production_planner.bookmark.help.create_include_group": "ЛКМ + перетаскивание - Создать/добавить в группу",
+  "emi.production_planner.bookmark.help.create_include_group": "ALT + ЛКМ + перетаскивание - Создать/добавить в группу",
   "emi.production_planner.bookmark.help.remove_exclude_group": "ПКМ + перетаскивание - Удалить/исключить из группы",
   "emi.production_planner.bookmark.help.change_recipe_quantity": "SHIFT/CTRL + колесо - Изменить количество рецепта",
   "emi.production_planner.bookmark.help.change_whole_group": "CTRL + SHIFT + колесо - Изменить всю группу",
@@ -1508,5 +1508,6 @@
   "emi.production_planner.migration.line_impact.external": "Внешний вход: %s",
   "emi.production_planner.migration.line_impact.net": "Чистый выход: %s",
   "emi.production_planner.migration.line_impact.flows_same": "Потоки материалов не изменились при текущих запланированных скоростях",
-  "emi.production_planner.migration.line_impact.missing": "%s текущих строк рецептов отсутствуют и исключены из новых итогов"
+  "emi.production_planner.migration.line_impact.missing": "%s текущих строк рецептов отсутствуют и исключены из новых итогов",
+  "emi.production_planner.bookmark.help.reorder_item": "ЛКМ + перетаскивание по закладке - Изменить порядок"
 }

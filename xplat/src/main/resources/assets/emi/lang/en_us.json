@@ -1320,7 +1320,7 @@
   "emi.production_planner.bookmark.help.remove_group": "SHIFT + A - Remove Group",
   "emi.production_planner.bookmark.help.craft_items": "SHIFT + C - Craft Items",
   "emi.production_planner.bookmark.help.open_exact_recipe": "LMB on Recipe - Open Exact Recipe",
-  "emi.production_planner.bookmark.help.create_include_group": "LMB + Drag - Create/Include Group",
+  "emi.production_planner.bookmark.help.create_include_group": "ALT + LMB + Drag - Create/Include Group",
   "emi.production_planner.bookmark.help.remove_exclude_group": "RMB + Drag - Remove/Exclude Group",
   "emi.production_planner.bookmark.help.change_recipe_quantity": "SHIFT/CTRL + Scroll - Change Recipe Quantity",
   "emi.production_planner.bookmark.help.change_whole_group": "CTRL + SHIFT + Scroll - Change Whole Group",
@@ -1508,5 +1508,6 @@
   "emi.production_planner.migration.line_impact.external": "External input: %s",
   "emi.production_planner.migration.line_impact.net": "Net output: %s",
   "emi.production_planner.migration.line_impact.flows_same": "Material flows are unchanged at the current planned craft rates",
-  "emi.production_planner.migration.line_impact.missing": "%s current recipe row(s) are missing and are excluded from the new-side totals"
+  "emi.production_planner.migration.line_impact.missing": "%s current recipe row(s) are missing and are excluded from the new-side totals",
+  "emi.production_planner.bookmark.help.reorder_item": "LMB + Drag on Bookmark - Reorder Bookmark"
 }
