@@ -2631,10 +2631,14 @@ public final class FavoriteGroupSidebar {
 		if (client.currentScreen == null) {
 			return false;
 		}
+		boolean patternTerminal = isAe2PatternTerminal(client.currentScreen);
 		List<EmiIngredient> stacks = new ArrayList<>();
 		for (EmiFavorite favorite : group.members()) {
 			if (stacks.size() >= 63) {
 				break;
+			}
+			if (patternTerminal && favorite.getRole() != Role.INGREDIENT) {
+				continue;
 			}
 			EmiIngredient ingredient = concreteDragIngredient(favorite);
 			if (ingredient.isEmpty() || containsEquivalent(stacks, ingredient)) {
@@ -2643,6 +2647,37 @@ public final class FavoriteGroupSidebar {
 			stacks.add(ingredient);
 		}
 		return !stacks.isEmpty() && EmiDragDropHandlers.dropStacks(client.currentScreen, stacks, mouseX, mouseY);
+	}
+
+	private static boolean isAe2PatternTerminal(Screen screen) {
+		if (screen == null) {
+			return false;
+		}
+		if (isAe2PatternTerminalType(screen.getClass())) {
+			return true;
+		}
+		return screen instanceof HandledScreen<?> handled
+				&& isAe2PatternTerminalType(handled.getScreenHandler().getClass());
+	}
+
+	private static boolean isAe2PatternTerminalType(Class<?> type) {
+		for (Class<?> current = type; current != null; current = current.getSuperclass()) {
+			String name = current.getName().toLowerCase(Locale.ROOT);
+			String simple = current.getSimpleName().toLowerCase(Locale.ROOT);
+			boolean ae2Like = name.startsWith("appeng.")
+					|| name.startsWith("com.gtocore.")
+					|| name.contains("ae2");
+			if (!ae2Like || simple.contains("access")) {
+				continue;
+			}
+			if (simple.contains("patternencodingterm")
+					|| simple.contains("patternterminal")
+					|| simple.contains("patterntermscreen")
+					|| simple.contains("patterntermmenu")) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private static EmiIngredient concreteDragIngredient(EmiFavorite favorite) {

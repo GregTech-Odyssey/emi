@@ -47,6 +47,9 @@ public class EmiDragDropHandlers {
 		if (dropStacksToAe2StorageBus(screen, stacks, x, y)) {
 			return true;
 		}
+		if (dropStacksToAe2PatternInputs(screen, stacks, x, y)) {
+			return true;
+		}
 		if (fromClass.containsKey(screen.getClass())) {
 			for (EmiDragDropHandler handler : fromClass.get(screen.getClass())) {
 				if (handler.dropStacks(screen, stacks, x, y)) {
@@ -129,6 +132,120 @@ public class EmiDragDropHandlers {
 			}
 		}
 		return true;
+	}
+
+	private static boolean dropStacksToAe2PatternInputs(Screen screen, List<? extends EmiIngredient> stacks, int x, int y) {
+		if (!(screen instanceof HandledScreen<?> handled)) {
+			return false;
+		}
+
+		Object menu = handled.getScreenHandler();
+		List<Slot> inputs = getAe2PatternSlots(menu, "getProcessingInputSlots");
+		List<Slot> outputs = getAe2PatternSlots(menu, "getProcessingOutputSlots");
+		if (inputs.isEmpty() || outputs.isEmpty()) {
+			return false;
+		}
+
+		Boolean processingMode = isAe2ProcessingPatternMode(menu);
+		if (Boolean.FALSE.equals(processingMode)) {
+			return false;
+		}
+
+		inputs.removeIf(slot -> !isAe2PatternSlotEnabled(slot));
+		outputs.removeIf(slot -> !isAe2PatternSlotEnabled(slot));
+		if (inputs.isEmpty()) {
+			return false;
+		}
+		if (processingMode == null && outputs.isEmpty()) {
+			return false;
+		}
+
+		HandledScreenAccessor accessor = (HandledScreenAccessor) handled;
+		int left = accessor.getX();
+		int top = accessor.getY();
+		List<Slot> patternSlots = Lists.newArrayList(inputs);
+		patternSlots.addAll(outputs);
+
+		int minX = Integer.MAX_VALUE;
+		int minY = Integer.MAX_VALUE;
+		int maxX = Integer.MIN_VALUE;
+		int maxY = Integer.MIN_VALUE;
+		for (Slot slot : patternSlots) {
+			minX = Math.min(minX, slot.x);
+			minY = Math.min(minY, slot.y);
+			maxX = Math.max(maxX, slot.x + 16);
+			maxY = Math.max(maxY, slot.y + 16);
+		}
+		if (x < left + minX || x >= left + maxX || y < top + minY || y >= top + maxY) {
+			return false;
+		}
+
+		inputs.sort((a, b) -> {
+			int yCompare = Integer.compare(a.y, b.y);
+			return yCompare != 0 ? yCompare : Integer.compare(a.x, b.x);
+		});
+
+		int target = 0;
+		for (EmiIngredient ingredient : stacks) {
+			if (ingredient == null || ingredient.isEmpty()) {
+				continue;
+			}
+			while (target < inputs.size()) {
+				Slot slot = inputs.get(target++);
+				if (!slot.getStack().isEmpty()) {
+					continue;
+				}
+				if (dropStack(screen, ingredient, left + slot.x + 8, top + slot.y + 8)) {
+					break;
+				}
+			}
+			if (target >= inputs.size()) {
+				break;
+			}
+		}
+
+		return true;
+	}
+
+	private static List<Slot> getAe2PatternSlots(Object menu, String methodName) {
+		List<Slot> result = Lists.newArrayList();
+		try {
+			Object value = menu.getClass().getMethod(methodName).invoke(menu);
+			if (value instanceof Object[] array) {
+				for (Object element : array) {
+					if (element instanceof Slot slot) {
+						result.add(slot);
+					}
+				}
+			}
+		} catch (ReflectiveOperationException | LinkageError ignored) {
+		}
+		return result;
+	}
+
+	private static Boolean isAe2ProcessingPatternMode(Object menu) {
+		try {
+			Object mode = menu.getClass().getMethod("getMode").invoke(menu);
+			if (mode instanceof Enum<?> enumMode) {
+				return "PROCESSING".equals(enumMode.name());
+			}
+			if (mode != null) {
+				return "PROCESSING".equalsIgnoreCase(mode.toString());
+			}
+		} catch (ReflectiveOperationException | LinkageError ignored) {
+		}
+		return null;
+	}
+
+	private static boolean isAe2PatternSlotEnabled(Slot slot) {
+		try {
+			Object enabled = slot.getClass().getMethod("isSlotEnabled").invoke(slot);
+			if (enabled instanceof Boolean b) {
+				return b;
+			}
+		} catch (ReflectiveOperationException ignored) {
+		}
+		return slot.isEnabled();
 	}
 
 	private static boolean dropStacksToAe2StorageBus(Screen screen, List<? extends EmiIngredient> stacks, int x, int y) {
