@@ -65,6 +65,7 @@ import net.minecraft.text.Text;
 public class ConfigScreen extends Screen {
 	private static final int maxWidth = 240;
 	private Screen last;
+	private final boolean groupingOnly;
 	private ConfigSearch search;
 	public ListWidget list;
 	public EmiBind activeBind;
@@ -75,8 +76,15 @@ public class ConfigScreen extends Screen {
 	public ButtonWidget resetButton;
 
 	public ConfigScreen(Screen last) {
-		super(EmiPort.translatable("screen.emi.config"));
+		this(last, false);
+	}
+
+	public ConfigScreen(Screen last, boolean groupingOnly) {
+		super(groupingOnly
+				? EmiPort.literal(PlannerText.tr("sidebar.config.group", "Sidebar Grouping"))
+				: EmiPort.translatable("screen.emi.config"));
 		this.last = last;
+		this.groupingOnly = groupingOnly;
 		originalConfig = EmiConfig.getSavedConfig();
 	}
 
@@ -97,14 +105,31 @@ public class ConfigScreen extends Screen {
 	private static Text getConfigText(String key) {
 		String value = switch (key) {
 			case "ui.sidebar-grouping-enabled" -> PlannerText.tr("sidebar.config.enabled", "Enable Sidebar Grouping");
-			case "ui.sidebar-grouping-gt-tag-prefix" -> PlannerText.tr("sidebar.config.gt_prefix", "Group GT TagPrefix Items");
+			case "ui.sidebar-grouping-gt-tag-prefix" -> PlannerText.tr("sidebar.config.gt_prefix", "Group GT Material Forms");
+			case "ui.sidebar-grouping-gt-wires" -> PlannerText.tr("sidebar.config.gt_wires", "Group GT Wires");
+			case "ui.sidebar-grouping-gt-cables" -> PlannerText.tr("sidebar.config.gt_cables", "Group GT Cables");
+			case "ui.sidebar-grouping-gt-pipes" -> PlannerText.tr("sidebar.config.gt_pipes", "Group GT Pipes");
+			case "ui.sidebar-grouping-gt-fluid-buckets" -> PlannerText.tr("sidebar.config.gt_fluid_buckets", "Group Fluid Buckets");
+			case "ui.sidebar-grouping-gt-fluids" -> PlannerText.tr("sidebar.config.gt_fluids", "Group GT Fluids");
+			case "ui.sidebar-grouping-gt-surface-rocks" -> PlannerText.tr("sidebar.config.gt_surface_rocks", "Group Surface Rocks");
+			case "ui.sidebar-grouping-gt-turbine-blades" -> PlannerText.tr("sidebar.config.gt_turbine_blades", "Group Turbine Blades");
+			case "ui.sidebar-grouping-gt-drill-heads" -> PlannerText.tr("sidebar.config.gt_drill_heads", "Group Drill Heads");
+			case "ui.sidebar-grouping-gt-frames" -> PlannerText.tr("sidebar.config.gt_frames", "Group Frames");
+			case "ui.sidebar-grouping-gt-coil-blocks" -> PlannerText.tr("sidebar.config.gt_coil_blocks", "Group Coil Blocks");
 			case "ui.sidebar-grouping-tier-rules" -> PlannerText.tr("sidebar.config.tier_rules", "Group Tier Variants");
+			case "ui.sidebar-grouping-circuits" -> PlannerText.tr("sidebar.config.circuits", "Group GT Circuits");
+			case "ui.sidebar-grouping-spawn-eggs" -> PlannerText.tr("sidebar.config.spawn_eggs", "Group Spawn Eggs");
+			case "ui.sidebar-grouping-tools" -> PlannerText.tr("sidebar.config.tools", "Group Tools");
+			case "ui.sidebar-grouping-armor" -> PlannerText.tr("sidebar.config.armor", "Group Armor");
+			case "ui.sidebar-grouping-weapons" -> PlannerText.tr("sidebar.config.weapons", "Group Weapons");
+			case "ui.sidebar-grouping-chisel-blocks" -> PlannerText.tr("sidebar.config.chisel_blocks", "Group Chisel Blocks");
 			case "ui.sidebar-grouping-color-rules" -> PlannerText.tr("sidebar.config.color_rules", "Group Color Variants");
 			case "ui.sidebar-grouping-wood-rules" -> PlannerText.tr("sidebar.config.wood_rules", "Group Wood Variants");
 			case "ui.sidebar-grouping-same-item-id" -> PlannerText.tr("sidebar.config.same_id", "Group Same Item ID");
 			case "ui.sidebar-grouping-tier-prefixes" -> PlannerText.tr("sidebar.config.tier_prefixes", "Tier Prefixes");
 			case "ui.sidebar-grouping-color-prefixes" -> PlannerText.tr("sidebar.config.color_prefixes", "Color Prefixes");
 			case "ui.sidebar-grouping-wood-prefixes" -> PlannerText.tr("sidebar.config.wood_prefixes", "Wood Prefixes");
+			case "ui.sidebar-grouping-custom-rules-enabled" -> PlannerText.tr("sidebar.config.custom_rules_enabled", "Enable Custom ID Rules");
 			case "ui.sidebar-grouping-custom-rules" -> PlannerText.tr("sidebar.config.custom_rules", "Custom ID Rules");
 			case "ui.sidebar-grouping-blacklist" -> PlannerText.tr("sidebar.config.blacklist", "Grouping Blacklist");
 			default -> null;
@@ -199,6 +224,9 @@ public class ConfigScreen extends Screen {
 			for (Field field : EmiConfig.class.getFields()) {
 				ConfigValue annot = field.getAnnotation(ConfigValue.class);
 				if (annot != null) {
+					if (groupingOnly && !annot.value().startsWith("ui.sidebar-grouping")) {
+						continue;
+					}
 					String group = annot.value().split("\\.")[0];
 					if (group.equals("persistent")) {
 						continue;

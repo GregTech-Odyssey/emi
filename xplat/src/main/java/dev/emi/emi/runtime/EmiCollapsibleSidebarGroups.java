@@ -26,7 +26,18 @@ import dev.emi.emi.api.stack.EmiStack;
 import dev.emi.emi.config.EmiConfig;
 import dev.emi.emi.platform.EmiAgnos;
 import net.minecraft.fluid.Fluid;
+import net.minecraft.item.ArmorItem;
+import net.minecraft.item.AxeItem;
+import net.minecraft.item.BowItem;
+import net.minecraft.item.CrossbowItem;
+import net.minecraft.item.HoeItem;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.PickaxeItem;
+import net.minecraft.item.ShovelItem;
+import net.minecraft.item.SpawnEggItem;
+import net.minecraft.item.SwordItem;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Identifier;
 
 public final class EmiCollapsibleSidebarGroups {
@@ -81,6 +92,12 @@ public final class EmiCollapsibleSidebarGroups {
 			{ "_axe", "axe" },
 			{ "_hoe", "hoe" }
 	};
+	private static final String[][] GENERAL_TOOL_SUFFIXES = {
+			{ "_pickaxe", "pickaxe" },
+			{ "_shovel", "shovel" },
+			{ "_axe", "axe" },
+			{ "_hoe", "hoe" }
+	};
 	private static final String[][] GT_WIRE_FORMS = {
 			{ "single", "wire1x" },
 			{ "double", "wire2x" },
@@ -103,6 +120,32 @@ public final class EmiCollapsibleSidebarGroups {
 	};
 	private static final String[] GT_PIPE_SIZES = {
 			"tiny", "small", "normal", "large", "huge", "quadruple", "nonuple"
+	};
+	private static final String[][] ARMOR_SUFFIXES = {
+			{ "_helmet", "helmet" },
+			{ "_chestplate", "chestplate" },
+			{ "_leggings", "leggings" },
+			{ "_boots", "boots" }
+	};
+	private static final String[][] WEAPON_SUFFIXES = {
+			{ "_crossbow", "crossbow" },
+			{ "_butchery_knife", "knife" },
+			{ "_revolver", "revolver" },
+			{ "_shotgun", "shotgun" },
+			{ "_launcher", "launcher" },
+			{ "_blaster", "blaster" },
+			{ "_pistol", "pistol" },
+			{ "_rifle", "rifle" },
+			{ "_trident", "trident" },
+			{ "_katana", "katana" },
+			{ "_dagger", "dagger" },
+			{ "_spear", "spear" },
+			{ "_sword", "sword" },
+			{ "_knife", "knife" },
+			{ "_mace", "mace" },
+			{ "_staff", "staff" },
+			{ "_gun", "gun" },
+			{ "_bow", "bow" }
 	};
 
 	static {
@@ -255,76 +298,65 @@ public final class EmiCollapsibleSidebarGroups {
 			if (!emitted.add(key)) {
 				continue;
 			}
+			List<EmiIngredient> ordered = orderedMembers(group, settings);
 			if (expanded.contains(key)) {
-				List<EmiIngredient> ordered = new ArrayList<>(group.members());
-				ordered.sort(Comparator.comparing(EmiCollapsibleSidebarGroups::memberSortKey));
 				visible.addAll(ordered);
 			} else {
-				visible.add(ingredient);
+				visible.add(ordered.get(0));
 			}
 		}
 		return new Cache(source.size(), settingsHash, List.copyOf(visible), groupsByIngredient);
 	}
 
-	private static String memberSortKey(EmiIngredient ingredient) {
+	private static List<EmiIngredient> orderedMembers(Group group, Settings settings) {
+		if (!group.key.startsWith("tier:")) {
+			return group.members();
+		}
+		List<EmiIngredient> ordered = new ArrayList<>(group.members());
+		ordered.sort(Comparator.comparingInt((EmiIngredient ingredient) -> tierOrder(ingredient, settings.tierPrefixes)));
+		return ordered;
+	}
+
+	private static int tierOrderAnywhere(EmiIngredient ingredient, List<String> prefixes) {
 		List<EmiStack> stacks = ingredient.getEmiStacks();
 		if (stacks.size() != 1) {
-			return "~";
+			return Integer.MAX_VALUE;
 		}
 		Identifier id = stacks.get(0).getId();
 		if (id == null) {
-			return "~";
+			return Integer.MAX_VALUE;
 		}
-		String namespace = id.getNamespace().toLowerCase(Locale.ROOT);
-		String path = id.getPath().toLowerCase(Locale.ROOT);
-		String material = materialSortPath(path);
-		int namespaceOrder = namespace.equals("gtceu") ? 0 : namespace.equals("gtocore") ? 1 : 2;
-		return material + "\u0000" + namespaceOrder + "\u0000" + path + "\u0000" + namespace;
+		return tierIndex(id.getPath().toLowerCase(Locale.ROOT), prefixes);
 	}
 
-	private static String materialSortPath(String path) {
-		String value = path;
-		String[] starts = {
-				"hot_", "small_", "tiny_", "impure_", "pure_", "refined_", "purified_", "crushed_", "raw_",
-				"chipped_", "flawed_", "flawless_", "exquisite_", "dense_", "double_", "triple_", "quadruple_",
-				"quintuple_", "superdense_", "long_", "fine_"
-		};
-		for (String start : starts) {
-			if (value.startsWith(start) && value.length() > start.length()) {
-				value = value.substring(start.length());
-				break;
+	private static int tierIndex(String path, List<String> prefixes) {
+		for (int i = 0; i < prefixes.size(); i++) {
+			String prefix = prefixes.get(i);
+			if (path.equals(prefix) || path.startsWith(prefix + "_") || path.endsWith("_" + prefix)
+					|| path.contains("_" + prefix + "_")) {
+				return i;
 			}
 		}
-		String[] ends = {
-				"_turbine_blade", "_drill_head", "_fluid_pipe", "_item_pipe", "_butchery_knife", "_wire_cutter",
-				"_soft_mallet", "_mining_hammer", "_screwdriver", "_crowbar", "_wrench", "_hammer", "_mortar",
-				"_plunger", "_scythe", "_pickaxe", "_shovel", "_sword", "_knife", "_file", "_saw", "_axe", "_hoe",
-				"_coil_block", "_indicator", "_bucket", "_frame", "_ingot", "_dust", "_nugget", "_plate", "_foil", "_rod",
-				"_bolt", "_screw", "_round", "_ring", "_spring", "_gear", "_rotor", "_lens", "_gem", "_ore",
-				"_wire", "_cable"
-		};
-		for (String end : ends) {
-			if (value.endsWith(end) && value.length() > end.length()) {
-				value = value.substring(0, value.length() - end.length());
-				break;
+		return Integer.MAX_VALUE;
+	}
+
+	private static int tierOrder(EmiIngredient ingredient, List<String> prefixes) {
+		List<EmiStack> stacks = ingredient.getEmiStacks();
+		if (stacks.size() != 1) {
+			return Integer.MAX_VALUE;
+		}
+		Identifier id = stacks.get(0).getId();
+		if (id == null) {
+			return Integer.MAX_VALUE;
+		}
+		String path = id.getPath().toLowerCase(Locale.ROOT);
+		for (int i = 0; i < prefixes.size(); i++) {
+			String prefix = prefixes.get(i) + "_";
+			if (path.startsWith(prefix)) {
+				return i;
 			}
 		}
-		String[] multiplicities = {
-				"single_", "double_", "quadruple_", "quad_", "octal_", "oct_", "hex_", "hexadecuple_",
-				"tiny_", "small_", "normal_", "large_", "huge_", "nonuple_"
-		};
-		for (String multiplicity : multiplicities) {
-			if (value.startsWith(multiplicity) && value.length() > multiplicity.length()) {
-				value = value.substring(multiplicity.length());
-				break;
-			}
-			String suffix = "_" + multiplicity.substring(0, multiplicity.length() - 1);
-			if (value.endsWith(suffix) && value.length() > suffix.length()) {
-				value = value.substring(0, value.length() - suffix.length());
-				break;
-			}
-		}
-		return value;
+		return Integer.MAX_VALUE;
 	}
 
 	private static String key(EmiIngredient ingredient, Settings settings) {
@@ -343,29 +375,63 @@ public final class EmiCollapsibleSidebarGroups {
 		if (matchesAny(settings.blacklist, fullId, path)) {
 			return null;
 		}
-		for (String rule : settings.customRules) {
-			if (matches(rule, fullId, path)) {
-				return "custom:" + rule;
+		if (EmiConfig.sidebarGroupingCustomRulesEnabled) {
+			for (String rule : settings.customRules) {
+				if (matches(rule, fullId, path)) {
+					return "custom:" + rule;
+				}
 			}
 		}
 		boolean gtNamespace = namespace.equals("gtceu") || namespace.equals("gtocore");
-		if (EmiConfig.sidebarGroupingGtTagPrefix && gtNamespace && stack.getKey() instanceof Fluid) {
+		if (EmiConfig.sidebarGroupingGtFluids && gtNamespace && stack.getKey() instanceof Fluid) {
 			return "gt-prefix:fluid";
 		}
 		ItemStack itemStack = stack.getItemStack();
 		if (itemStack.isEmpty()) {
 			return null;
 		}
-		if (EmiConfig.sidebarGroupingGtTagPrefix) {
-			String gtPrefix = gtPrefix(itemStack, namespace, path);
-			if (gtPrefix != null) {
-				return "gt-prefix:" + gtPrefix;
+		int circuitTier = circuitTier(itemStack, namespace, path, settings.tierPrefixes);
+		if (circuitTier != Integer.MAX_VALUE) {
+			if (!EmiConfig.sidebarGroupingCircuits) {
+				return null;
 			}
+			return "gt-circuit:" + settings.tierPrefixes.get(circuitTier);
+		}
+		boolean spawnEgg = itemStack.getItem() instanceof SpawnEggItem || path.endsWith("_spawn_egg");
+		if (spawnEgg) {
+			return EmiConfig.sidebarGroupingSpawnEggs ? "equipment:spawn_egg" : null;
+		}
+		String tool = vanillaToolCategory(itemStack.getItem());
+		if (tool == null) {
+			tool = suffixCategory(path, GENERAL_TOOL_SUFFIXES);
+		}
+		if (tool != null) {
+			return EmiConfig.sidebarGroupingTools ? "equipment:tool:" + tool : null;
+		}
+		String armor = suffixCategory(path, ARMOR_SUFFIXES);
+		if (armor != null || itemStack.getItem() instanceof ArmorItem) {
+			return EmiConfig.sidebarGroupingArmor ? "equipment:armor:" + (armor == null ? "armor" : armor) : null;
+		}
+		String weapon = vanillaWeaponCategory(itemStack.getItem());
+		if (weapon == null) {
+			weapon = suffixCategory(path, WEAPON_SUFFIXES);
+		}
+		if (weapon != null) {
+			return EmiConfig.sidebarGroupingWeapons ? "equipment:weapon:" + weapon : null;
+		}
+		String chisel = chiselCategory(namespace, path);
+		if (chisel != null) {
+			return EmiConfig.sidebarGroupingChiselBlocks ? "chisel:" + chisel : null;
+		}
+		String gtPrefix = gtPrefix(itemStack, namespace, path);
+		if (gtPrefix != null) {
+			return gtPrefixEnabled(gtPrefix) ? "gt-prefix:" + gtPrefix : null;
 		}
 		if (EmiConfig.sidebarGroupingTierRules) {
 			String stripped = stripPrefix(path, settings.tierPrefixes);
 			if (stripped != null) {
-				return "tier:" + namespace + ":" + stripped;
+				String tierNamespace = gtNamespace ? "gt" : namespace;
+				return "tier:" + tierNamespace + ":" + stripped;
 			}
 		}
 		if (EmiConfig.sidebarGroupingColorRules) {
@@ -382,6 +448,128 @@ public final class EmiCollapsibleSidebarGroups {
 		}
 		if (EmiConfig.sidebarGroupingSameItemId) {
 			return "id:" + id;
+		}
+		return null;
+	}
+
+	private static int circuitTier(ItemStack stack, String namespace, String path, List<String> prefixes) {
+		int taggedTier = circuitTier(stack, prefixes);
+		if (taggedTier != Integer.MAX_VALUE) {
+			return taggedTier;
+		}
+		if (!namespace.equals("gtceu") && !namespace.equals("gtocore")) {
+			return Integer.MAX_VALUE;
+		}
+		if (!path.contains("circuit")) {
+			return Integer.MAX_VALUE;
+		}
+		if (path.contains("assembler") || path.contains("board") || path.contains("breaker")
+				|| path.contains("pattern")) {
+			return Integer.MAX_VALUE;
+		}
+		return tierIndex(path, prefixes);
+	}
+
+	private static int circuitTier(ItemStack stack, List<String> prefixes) {
+		for (TagKey<Item> tag : stack.streamTags().toList()) {
+			String path = tag.id().getPath().toLowerCase(Locale.ROOT);
+			if (!path.startsWith("circuits/")) {
+				continue;
+			}
+			String tier = path.substring("circuits/".length());
+			for (int i = 0; i < prefixes.size(); i++) {
+				if (tier.equals(prefixes.get(i))) {
+					return i;
+				}
+			}
+		}
+		return Integer.MAX_VALUE;
+	}
+
+	private static String vanillaToolCategory(Item item) {
+		if (item instanceof PickaxeItem) {
+			return "pickaxe";
+		}
+		if (item instanceof AxeItem) {
+			return "axe";
+		}
+		if (item instanceof ShovelItem) {
+			return "shovel";
+		}
+		if (item instanceof HoeItem) {
+			return "hoe";
+		}
+		return null;
+	}
+
+	private static String vanillaWeaponCategory(Item item) {
+		if (item instanceof SwordItem) {
+			return "sword";
+		}
+		if (item instanceof BowItem) {
+			return "bow";
+		}
+		if (item instanceof CrossbowItem) {
+			return "crossbow";
+		}
+		return null;
+	}
+
+	private static String chiselCategory(String namespace, String path) {
+		if (!namespace.equals("chisel") && !namespace.equals("rechiseled")) {
+			return null;
+		}
+		int slash = path.lastIndexOf('/');
+		if (slash >= 0 && slash + 1 < path.length()) {
+			return path.substring(slash + 1);
+		}
+		return null;
+	}
+
+	private static boolean gtPrefixEnabled(String prefix) {
+		if (prefix.startsWith("wire") || prefix.equals("finewire")) {
+			return EmiConfig.sidebarGroupingGtWires;
+		}
+		if (prefix.startsWith("cable")) {
+			return EmiConfig.sidebarGroupingGtCables;
+		}
+		if (prefix.startsWith("fluidpipe") || prefix.startsWith("itempipe")) {
+			return EmiConfig.sidebarGroupingGtPipes;
+		}
+		if (prefix.equals("fluidbucket")) {
+			return EmiConfig.sidebarGroupingGtFluidBuckets;
+		}
+		if (prefix.equals("surfacerock")) {
+			return EmiConfig.sidebarGroupingGtSurfaceRocks;
+		}
+		if (prefix.equals("turbineblade")) {
+			return EmiConfig.sidebarGroupingGtTurbineBlades;
+		}
+		if (prefix.equals("drillhead")) {
+			return EmiConfig.sidebarGroupingGtDrillHeads;
+		}
+		if (prefix.equals("frame")) {
+			return EmiConfig.sidebarGroupingGtFrames;
+		}
+		if (prefix.equals("coilblock")) {
+			return EmiConfig.sidebarGroupingGtCoilBlocks;
+		}
+		if (prefix.equals("toolsword") || prefix.equals("toolknife") || prefix.equals("toolbutcheryknife")) {
+			return EmiConfig.sidebarGroupingWeapons;
+		}
+		if (prefix.startsWith("tool")) {
+			return EmiConfig.sidebarGroupingTools;
+		}
+		return EmiConfig.sidebarGroupingGtTagPrefix;
+	}
+
+	private static String suffixCategory(String path, String[][] suffixes) {
+		for (String[] suffix : suffixes) {
+			String token = suffix[0];
+			if ((path.endsWith(token) && path.length() > token.length())
+					|| (token.startsWith("_") && path.equals(token.substring(1)))) {
+				return suffix[1];
+			}
 		}
 		return null;
 	}
@@ -461,13 +649,30 @@ public final class EmiCollapsibleSidebarGroups {
 	private static int settingsHash() {
 		int result = Boolean.hashCode(EmiConfig.sidebarGroupingEnabled);
 		result = 31 * result + Boolean.hashCode(EmiConfig.sidebarGroupingGtTagPrefix);
+		result = 31 * result + Boolean.hashCode(EmiConfig.sidebarGroupingGtWires);
+		result = 31 * result + Boolean.hashCode(EmiConfig.sidebarGroupingGtCables);
+		result = 31 * result + Boolean.hashCode(EmiConfig.sidebarGroupingGtPipes);
+		result = 31 * result + Boolean.hashCode(EmiConfig.sidebarGroupingGtFluidBuckets);
+		result = 31 * result + Boolean.hashCode(EmiConfig.sidebarGroupingGtFluids);
+		result = 31 * result + Boolean.hashCode(EmiConfig.sidebarGroupingGtSurfaceRocks);
+		result = 31 * result + Boolean.hashCode(EmiConfig.sidebarGroupingGtTurbineBlades);
+		result = 31 * result + Boolean.hashCode(EmiConfig.sidebarGroupingGtDrillHeads);
+		result = 31 * result + Boolean.hashCode(EmiConfig.sidebarGroupingGtFrames);
+		result = 31 * result + Boolean.hashCode(EmiConfig.sidebarGroupingGtCoilBlocks);
 		result = 31 * result + Boolean.hashCode(EmiConfig.sidebarGroupingTierRules);
+		result = 31 * result + Boolean.hashCode(EmiConfig.sidebarGroupingCircuits);
+		result = 31 * result + Boolean.hashCode(EmiConfig.sidebarGroupingSpawnEggs);
+		result = 31 * result + Boolean.hashCode(EmiConfig.sidebarGroupingTools);
+		result = 31 * result + Boolean.hashCode(EmiConfig.sidebarGroupingArmor);
+		result = 31 * result + Boolean.hashCode(EmiConfig.sidebarGroupingWeapons);
+		result = 31 * result + Boolean.hashCode(EmiConfig.sidebarGroupingChiselBlocks);
 		result = 31 * result + Boolean.hashCode(EmiConfig.sidebarGroupingColorRules);
 		result = 31 * result + Boolean.hashCode(EmiConfig.sidebarGroupingWoodRules);
 		result = 31 * result + Boolean.hashCode(EmiConfig.sidebarGroupingSameItemId);
 		result = 31 * result + EmiConfig.sidebarGroupingTierPrefixes.hashCode();
 		result = 31 * result + EmiConfig.sidebarGroupingColorPrefixes.hashCode();
 		result = 31 * result + EmiConfig.sidebarGroupingWoodPrefixes.hashCode();
+		result = 31 * result + Boolean.hashCode(EmiConfig.sidebarGroupingCustomRulesEnabled);
 		result = 31 * result + EmiConfig.sidebarGroupingCustomRules.hashCode();
 		result = 31 * result + EmiConfig.sidebarGroupingBlacklist.hashCode();
 		return result;

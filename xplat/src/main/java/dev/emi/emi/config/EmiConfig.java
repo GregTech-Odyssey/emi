@@ -281,8 +281,56 @@ public class EmiConfig {
 	@ConfigValue("ui.sidebar-grouping-gt-tag-prefix")
 	public static boolean sidebarGroupingGtTagPrefix = true;
 
+	@ConfigValue("ui.sidebar-grouping-gt-wires")
+	public static boolean sidebarGroupingGtWires = true;
+
+	@ConfigValue("ui.sidebar-grouping-gt-cables")
+	public static boolean sidebarGroupingGtCables = true;
+
+	@ConfigValue("ui.sidebar-grouping-gt-pipes")
+	public static boolean sidebarGroupingGtPipes = true;
+
+	@ConfigValue("ui.sidebar-grouping-gt-fluid-buckets")
+	public static boolean sidebarGroupingGtFluidBuckets = true;
+
+	@ConfigValue("ui.sidebar-grouping-gt-fluids")
+	public static boolean sidebarGroupingGtFluids = true;
+
+	@ConfigValue("ui.sidebar-grouping-gt-surface-rocks")
+	public static boolean sidebarGroupingGtSurfaceRocks = true;
+
+	@ConfigValue("ui.sidebar-grouping-gt-turbine-blades")
+	public static boolean sidebarGroupingGtTurbineBlades = true;
+
+	@ConfigValue("ui.sidebar-grouping-gt-drill-heads")
+	public static boolean sidebarGroupingGtDrillHeads = true;
+
+	@ConfigValue("ui.sidebar-grouping-gt-frames")
+	public static boolean sidebarGroupingGtFrames = true;
+
+	@ConfigValue("ui.sidebar-grouping-gt-coil-blocks")
+	public static boolean sidebarGroupingGtCoilBlocks = true;
+
 	@ConfigValue("ui.sidebar-grouping-tier-rules")
 	public static boolean sidebarGroupingTierRules = true;
+
+	@ConfigValue("ui.sidebar-grouping-circuits")
+	public static boolean sidebarGroupingCircuits = true;
+
+	@ConfigValue("ui.sidebar-grouping-spawn-eggs")
+	public static boolean sidebarGroupingSpawnEggs = true;
+
+	@ConfigValue("ui.sidebar-grouping-tools")
+	public static boolean sidebarGroupingTools = true;
+
+	@ConfigValue("ui.sidebar-grouping-armor")
+	public static boolean sidebarGroupingArmor = true;
+
+	@ConfigValue("ui.sidebar-grouping-weapons")
+	public static boolean sidebarGroupingWeapons = true;
+
+	@ConfigValue("ui.sidebar-grouping-chisel-blocks")
+	public static boolean sidebarGroupingChiselBlocks = true;
 
 	@ConfigValue("ui.sidebar-grouping-color-rules")
 	public static boolean sidebarGroupingColorRules = true;
@@ -301,6 +349,9 @@ public class EmiConfig {
 
 	@ConfigValue("ui.sidebar-grouping-wood-prefixes")
 	public static String sidebarGroupingWoodPrefixes = "dark_oak,oak,spruce,birch,jungle,acacia,mangrove,cherry,bamboo,crimson,warped";
+
+	@ConfigValue("ui.sidebar-grouping-custom-rules-enabled")
+	public static boolean sidebarGroupingCustomRulesEnabled = true;
 
 	@ConfigValue("ui.sidebar-grouping-custom-rules")
 	public static String sidebarGroupingCustomRules = "";

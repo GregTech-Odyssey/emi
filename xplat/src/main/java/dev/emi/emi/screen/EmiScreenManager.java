@@ -80,7 +80,9 @@ import net.minecraft.client.gui.ParentElement;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.tooltip.TooltipComponent;
+import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.util.math.MatrixStack;
@@ -132,6 +134,12 @@ public class EmiScreenManager {
 	public static SizedButtonWidget tree = new SizedButtonWidget(0, 0, 20, 20, 184, 0,
 			() -> true, (w) -> EmiApi.viewRecipeTree(),
 			List.of(EmiPort.translatable("tooltip.emi.recipe_tree")));
+	public static ButtonWidget grouping = EmiPort.newButton(0, 0, 20, 20, EmiPort.literal("G"),
+			(w) -> client.setScreen(new ConfigScreen(client.currentScreen, true)));
+
+	static {
+		grouping.setTooltip(Tooltip.of(EmiPort.literal(PlannerText.tr("sidebar.config.button", "Sidebar Grouping"))));
+	}
 
 	public static boolean isDisabled() {
 		return !EmiReloadManager.isLoaded() || !EmiConfig.enabled;
@@ -536,6 +544,9 @@ public class EmiScreenManager {
 		if (tree.visible) {
 			x = Math.max(4, 4 + 22 + 22);
 		}
+		if (grouping.visible) {
+			x = Math.max(4, 4 + 22 + 22 + 22);
+		}
 		return x;
 	}
 
@@ -625,6 +636,7 @@ public class EmiScreenManager {
 		boolean visible = !isDisabled();
 		emi.visible = EmiConfig.emiConfigButtonVisibility.resolve(visible);
 		tree.visible = EmiConfig.recipeTreeButtonVisibility.resolve(visible);
+		grouping.visible = EmiConfig.emiConfigButtonVisibility.resolve(visible);
 		for (SidebarPanel panel : panels) {
 			panel.updateWidgetVisibility();
 		}
@@ -688,6 +700,7 @@ public class EmiScreenManager {
 		context.matrices().translate(0, 0, 100);
 		emi.render(context.raw(), mouseX, mouseY, delta);
 		tree.render(context.raw(), mouseX, mouseY, delta);
+		grouping.render(context.raw(), mouseX, mouseY, delta);
 		search.render(context.raw(), mouseX, mouseY, delta);
 		context.pop();
 	}
@@ -948,6 +961,9 @@ public class EmiScreenManager {
 		tree.x = 24;
 		tree.y = screen.height - 22;
 
+		grouping.setX(46);
+		grouping.setY(screen.height - 22);
+
 		updateSidebarButtons();
 	}
 
@@ -1005,6 +1021,8 @@ public class EmiScreenManager {
 		} else if (emi.mouseClicked(mouseX, mouseY, button)) {
 			return true;
 		} else if (tree.mouseClicked(mouseX, mouseY, button)) {
+			return true;
+		} else if (grouping.mouseClicked(mouseX, mouseY, button)) {
 			return true;
 		}
 		for (SidebarPanel panel : panels) {
